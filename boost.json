@@ -1,0 +1,23 @@
+{
+    "agents": [
+        "amp",
+        "junie",
+        "claude_code",
+        "codex",
+        "factory",
+        "opencode",
+        "grok_build"
+    ],
+    "cloud": false,
+    "guidelines": true,
+    "mcp": true,
+    "nightwatch": false,
+    "sail": false,
+    "skills": [
+        "ai-sdk-development",
+        "laravel-best-practices",
+        "livewire-development",
+        "pest-testing",
+        "tailwindcss-development"
+    ]
+}
