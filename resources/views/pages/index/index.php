@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\GenerateCorrection;
+use App\Actions\GenerateFollowUp;
 use Livewire\Component;
 
 new class extends Component
@@ -9,7 +10,7 @@ new class extends Component
 
     public bool $processing = false;
 
-    /** @var array<int, array{id: int, text: string, corrected: string, segments: array<int, array{type: string, original?: string, replacement?: string}>, explanations: array<int, array{tag: string, text: string}>, followUps: array<int, array{label: string, text: string}>, pending: bool, error: string|null, off_topic: bool}> */
+    /** @var array<int, array{id: int, text: string, corrected: string, segments: array<int, array{type: string, original?: string, replacement?: string}>, explanations: array<int, array{tag: string, text: string}>, followUps: array<int, array{label: string, text: string}>, followUpPending: bool, followUpKind: string|null, followUpError: string|null, pending: bool, error: string|null, error_stage: string|null, off_topic: bool}> */
     public array $attempts = [];
 
     public function submitText(): void
@@ -32,6 +33,9 @@ new class extends Component
             'segments' => [],
             'explanations' => [],
             'followUps' => [],
+            'followUpPending' => false,
+            'followUpKind' => null,
+            'followUpError' => null,
             'pending' => true,
             'error' => null,
             'off_topic' => false,
@@ -108,31 +112,44 @@ new class extends Component
         $this->text = '';
     }
 
-    public function rewriteNaturally(int $attemptId): void
+    public function startFollowUp(int $attemptId, string $kind): void
     {
-        if ($this->processing || ! isset($this->attempts[$attemptId])) {
+        if ($this->processing || ! isset($this->attempts[$attemptId]) || ! in_array($kind, ['rewrite', 'example'], true)) {
+            return;
+        }
+
+        $attempt = $this->attempts[$attemptId];
+        if ($attempt['pending'] || $attempt['error'] !== null || $attempt['off_topic'] || blank($attempt['corrected'])) {
             return;
         }
 
         $this->processing = true;
-        $this->attempts[$attemptId]['followUps'][] = [
-            'label' => 'Natural rewrite',
-            'text' => 'I went to the store yesterday, but it was closed, so my friend and I decided to come back the next day.',
-        ];
-        $this->processing = false;
+        $this->attempts[$attemptId]['followUpKind'] = $kind;
+        $this->attempts[$attemptId]['followUpPending'] = true;
+        $this->attempts[$attemptId]['followUpError'] = null;
+
+        $this->js('$wire.completeFollowUp('.$attemptId.')');
     }
 
-    public function moreExamples(int $attemptId): void
+    public function completeFollowUp(int $attemptId): void
     {
-        if ($this->processing || ! isset($this->attempts[$attemptId])) {
+        if (! $this->processing || ! isset($this->attempts[$attemptId]) || ! $this->attempts[$attemptId]['followUpPending']) {
             return;
         }
 
-        $this->processing = true;
-        $this->attempts[$attemptId]['followUps'][] = [
-            'label' => 'Example',
-            'text' => 'She went home early because the weather was getting worse.',
-        ];
+        $attempt = $this->attempts[$attemptId];
+        $followUps = app(GenerateFollowUp::class);
+        $result = $attempt['followUpKind'] === 'rewrite'
+            ? $followUps->rewrite($attempt['text'], $attempt['corrected'])
+            : $followUps->example($attempt['text'], $attempt['corrected']);
+
+        $this->attempts[$attemptId]['followUpPending'] = false;
         $this->processing = false;
+        $this->attempts[$attemptId]['followUpError'] = $result['error'];
+
+        if ($result['text'] !== null) {
+            $this->attempts[$attemptId]['followUps'][] = ['label' => $result['label'], 'text' => $result['text']];
+            $this->attempts[$attemptId]['followUpKind'] = null;
+        }
     }
 };
