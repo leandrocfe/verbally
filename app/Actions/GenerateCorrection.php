@@ -38,7 +38,7 @@ final class GenerateCorrection
 
             return ['corrected' => $corrected, 'details' => $detailResult['details'], 'error' => $detailResult['error'], 'stage' => $detailResult['error'] === null ? null : 'details'];
         } catch (Throwable $exception) {
-            return ['corrected' => $corrected, 'details' => null, 'error' => $this->errorMessage($exception), 'stage' => blank($corrected) ? 'stream' : 'details'];
+            return ['corrected' => $corrected, 'details' => null, 'error' => $this->errorMessage($exception), 'stage' => 'stream'];
         }
     }
 
@@ -68,7 +68,7 @@ final class GenerateCorrection
     /** @param array<string,mixed> $details */
     private function validDetails(array $details, string $corrected): bool
     {
-        if (($details['corrected'] ?? null) !== $corrected || ! is_bool($details['is_off_topic'] ?? null)) {
+        if (array_diff(array_keys($details), ['corrected', 'diff', 'explanations', 'is_off_topic']) !== [] || count($details) !== 4 || ! is_string($details['corrected'] ?? null) || ($details['corrected'] ?? null) !== $corrected || ! is_bool($details['is_off_topic'] ?? null) || ! is_array($details['diff'] ?? null) || ! is_array($details['explanations'] ?? null)) {
             return false;
         }
 
@@ -78,7 +78,7 @@ final class GenerateCorrection
         }
 
         $reconstructed = '';
-        foreach ($details['diff'] ?? [] as $segment) {
+        foreach ($details['diff'] as $index => $segment) {
             if (! is_array($segment) || ! in_array($segment['type'] ?? null, ['unchanged', 'removed', 'added'], true)) {
                 return false;
             }
@@ -91,13 +91,16 @@ final class GenerateCorrection
             if (array_diff(array_keys($segment), $allowed) !== []) {
                 return false;
             }
-            if ($type === 'unchanged' && (($segment['original'] ?? null) !== ($segment['replacement'] ?? null))) {
+            if ($type === 'unchanged' && (! is_string($segment['original'] ?? null) || ! is_string($segment['replacement'] ?? null) || $segment['original'] !== $segment['replacement'])) {
                 return false;
             }
-            if ($type === 'removed' && ! array_key_exists('original', $segment)) {
+            if ($type === 'removed' && (! array_key_exists('original', $segment) || ! is_string($segment['original']))) {
                 return false;
             }
-            if ($type === 'added' && ! array_key_exists('replacement', $segment)) {
+            if ($type === 'added' && (! array_key_exists('replacement', $segment) || ! is_string($segment['replacement']))) {
+                return false;
+            }
+            if ($type === 'removed' && isset($details['diff'][$index + 1]) && ($details['diff'][$index + 1]['type'] ?? null) !== 'added') {
                 return false;
             }
             if ($type !== 'removed') {

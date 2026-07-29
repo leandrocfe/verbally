@@ -50,6 +50,15 @@ it('reports an empty stream', function () {
     expect(app(GenerateCorrection::class)->stream('Hello', fn () => null)['stage'])->toBe('stream');
 });
 
+it('marks a stream exception after deltas as stream and does not call details', function () {
+    CorrectionTextAgent::fake(function (): string {
+        throw new RuntimeException('timeout');
+    });
+    CorrectionDetailsAgent::fake()->preventStrayPrompts();
+    $result = app(GenerateCorrection::class)->stream('Hello', fn () => null);
+    expect($result['stage'])->toBe('stream');
+});
+
 it('escapes streamed markup before it reaches the callback', function () {
     fakeCorrection('<script>alert(1)</script>', ['corrected' => '<script>alert(1)</script>', 'diff' => [['type' => 'unchanged', 'original' => '<script>alert(1)</script>', 'replacement' => '<script>alert(1)</script>']], 'explanations' => [['tag' => 'Looks good', 'text' => 'Correct.']], 'is_off_topic' => false]);
     $streamed = '';

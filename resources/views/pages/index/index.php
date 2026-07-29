@@ -72,6 +72,10 @@ new class extends Component
 
         if ($this->attempts[$attemptId]['error_stage'] === 'stream') {
             $this->attempts[$attemptId]['pending'] = true;
+            $this->attempts[$attemptId]['corrected'] = '';
+            $this->attempts[$attemptId]['segments'] = [];
+            $this->attempts[$attemptId]['explanations'] = [];
+            $this->attempts[$attemptId]['error'] = null;
             $this->processing = true;
             $this->completeCorrection($attemptId);
 
