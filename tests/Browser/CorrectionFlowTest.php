@@ -28,11 +28,13 @@ it('keeps the global lock while a correction is pending, then streams fixture-ba
     submitBrowserCorrection($page, 'I am waiting for a correction.');
 
     $page->assertSee('Correcting…')
+        ->assertScript('document.querySelector(\'article\').classList.contains(\'motion-safe:animate-pulse\')', true)
         ->assertScript('document.querySelector(\'textarea[aria-label="Write in English"]\').disabled', true)
         ->assertScript('[...document.querySelectorAll(\'button\')].find((button) => button.textContent.includes(\'Clear session\')).disabled', true)
         ->wait(1)
         ->assertSee('Corrected')
         ->assertSee('I am waiting for a correction.')
+        ->assertScript('document.querySelector(\'article\').classList.contains(\'motion-safe:animate-pulse\')', false)
         ->assertSee('The sentence is clear and correct.')
         ->assertNoJavaScriptErrors()
         ->assertNoConsoleLogs();

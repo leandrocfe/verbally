@@ -42,6 +42,7 @@ it('mounts one independent attempt island and starts only after its stream targe
     correctionAttempt()
         ->assertSet('pending', true)
         ->assertSee('Correcting…')
+        ->assertSee('motion-safe:animate-pulse', false)
         ->assertSee('$nextTick(() => $wire.completeCorrection().catch(() => $wire.reportStaleOperation()))', false)
         ->assertSee('FRAGMENT:type=island|name=attempt', false);
 });
@@ -51,6 +52,7 @@ it('streams and completes one correction without re-rendering its parent', funct
         ->call('completeCorrection')
         ->assertSet('pending', false)
         ->assertSet('corrected', 'I went home.')
+        ->assertDontSee('motion-safe:animate-pulse', false)
         ->assertSee('Grammar')
         ->assertDispatched('correction-attempt-finished', attemptId: 0);
 });
