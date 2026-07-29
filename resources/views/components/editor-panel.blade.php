@@ -1,6 +1,6 @@
 @props(['title', 'description', 'placeholder', 'value', 'countLabel', 'shortcutLabel'])
 
-<section {{ $attributes->class(['flex flex-col bg-white p-6 sm:p-[30px_28px]']) }}>
+<section {{ $attributes->class(['flex flex-col bg-white p-6 sm:p-[30px_28px] lg:border-r lg:border-[#e8eae4]']) }}>
     <div class="mb-5 flex flex-col gap-[5px]">
         <h2 class="font-display text-[26px] font-medium tracking-[-0.015em]">{{ $title }}</h2>
         <p class="text-[13.5px] leading-[1.5] text-[#7a8175]">{{ $description }}</p>
