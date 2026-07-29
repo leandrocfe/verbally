@@ -35,10 +35,20 @@ new class extends Component
             'pending' => true,
             'error' => null,
             'off_topic' => false,
+            'error_stage' => null,
         ];
         $this->text = '';
 
-        $result = app(GenerateCorrection::class)->stream($submission, function (string $delta) use ($attemptId): void {
+        /* Streaming starts from completeCorrection after the pending card is rendered. */
+    }
+
+    public function completeCorrection(int $attemptId): void
+    {
+        if (! $this->processing || ! isset($this->attempts[$attemptId]) || ! $this->attempts[$attemptId]['pending']) {
+            return;
+        }
+
+        $result = app(GenerateCorrection::class)->stream($this->attempts[$attemptId]['text'], function (string $delta) use ($attemptId): void {
             $this->attempts[$attemptId]['corrected'] .= $delta;
             $this->stream(htmlspecialchars($this->attempts[$attemptId]['corrected'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), replace: true, to: 'corrected-'.$attemptId);
         });
@@ -46,6 +56,7 @@ new class extends Component
         $this->attempts[$attemptId]['pending'] = false;
         $this->processing = false;
         $this->attempts[$attemptId]['error'] = $result['error'];
+        $this->attempts[$attemptId]['error_stage'] = $result['stage'];
         if ($result['details'] !== null) {
             $this->attempts[$attemptId]['segments'] = $result['details']['diff'];
             $this->attempts[$attemptId]['explanations'] = $result['details']['explanations'];
@@ -53,19 +64,20 @@ new class extends Component
         }
     }
 
-    public function completeCorrection(int $attemptId): void
+    public function retryDetails(int $attemptId): void
     {
-        if (! $this->processing || ! isset($this->attempts[$attemptId])) {
+        if ($this->processing || ! isset($this->attempts[$attemptId])) {
             return;
         }
 
-        $this->attempts[$attemptId]['pending'] = false;
-        $this->processing = false;
-    }
+        if ($this->attempts[$attemptId]['error_stage'] === 'stream') {
+            $this->attempts[$attemptId]['pending'] = true;
+            $this->processing = true;
+            $this->completeCorrection($attemptId);
 
-    public function retryDetails(int $attemptId): void
-    {
-        if ($this->processing || ! isset($this->attempts[$attemptId]) || blank($this->attempts[$attemptId]['corrected'])) {
+            return;
+        }
+        if (blank($this->attempts[$attemptId]['corrected'])) {
             return;
         }
 
@@ -74,9 +86,11 @@ new class extends Component
         $result = app(GenerateCorrection::class)->details($attempt['text'], $attempt['corrected']);
         $this->processing = false;
         $this->attempts[$attemptId]['error'] = $result['error'];
+        $this->attempts[$attemptId]['error_stage'] = $result['error'] === null ? null : 'details';
         if ($result['details'] !== null) {
             $this->attempts[$attemptId]['segments'] = $result['details']['diff'];
             $this->attempts[$attemptId]['explanations'] = $result['details']['explanations'];
+            $this->attempts[$attemptId]['off_topic'] = $result['details']['is_off_topic'];
         }
     }
 

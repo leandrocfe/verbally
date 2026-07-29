@@ -10,14 +10,14 @@ use Throwable;
 
 final class GenerateCorrection
 {
-    /** @return array{corrected:string, details:array<string,mixed>|null, error:string|null} */
+    /** @return array{corrected:string, details:array<string,mixed>|null, error:string|null, stage:string|null} */
     public function stream(string $submission, callable $onDelta): array
     {
         $model = Config::get('ai.verbally.gemini_model');
         $timeout = (int) Config::get('ai.verbally.timeout_seconds', 30);
 
         if (blank($model)) {
-            return ['corrected' => '', 'details' => null, 'error' => 'Gemini is not configured. Try again later.'];
+            return ['corrected' => '', 'details' => null, 'error' => 'Gemini is not configured. Try again later.', 'stage' => 'stream'];
         }
 
         $corrected = '';
@@ -31,14 +31,14 @@ final class GenerateCorrection
             }
 
             if (blank($corrected)) {
-                return ['corrected' => '', 'details' => null, 'error' => 'Gemini returned an empty response. Try again.'];
+                return ['corrected' => '', 'details' => null, 'error' => 'Gemini returned an empty response. Try again.', 'stage' => 'stream'];
             }
 
             $detailResult = $this->details($submission, $corrected);
 
-            return ['corrected' => $corrected, 'details' => $detailResult['details'], 'error' => $detailResult['error']];
+            return ['corrected' => $corrected, 'details' => $detailResult['details'], 'error' => $detailResult['error'], 'stage' => $detailResult['error'] === null ? null : 'details'];
         } catch (Throwable $exception) {
-            return ['corrected' => $corrected, 'details' => null, 'error' => $this->errorMessage($exception)];
+            return ['corrected' => $corrected, 'details' => null, 'error' => $this->errorMessage($exception), 'stage' => blank($corrected) ? 'stream' : 'details'];
         }
     }
 

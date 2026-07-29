@@ -1,9 +1,14 @@
 <div class="flex h-screen min-h-[720px] w-full flex-col overflow-hidden bg-[#f6f7f4]">
+    @island(always: true)
     <x-app-header mark="V" brand="Verbally" tagline="English corrections &amp; coaching" session-label="Session · {{ count($attempts) }} corrections" clear-label="Clear session" clear-action="clearSession" :disabled="$processing" />
+    @endisland
     <main class="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[440px_1fr]">
+        @island(always: true)
         <x-editor-panel title="Write in English" description="Paste or type a sentence. Verbally corrects it and explains every change." placeholder="e.g. Yesterday I go to the park and I have seen many peoples running…" :value="$text" count-label="{{ mb_strlen($text) }} / 2000" shortcut-label="⏎ to send · ⇧⏎ new line" model="text" :disabled="$processing || count($attempts) >= 20">
             <x-slot:action><x-primary-button label="Correct my text" wire:click="submitText" :disabled="$processing || count($attempts) >= 20" /></x-slot:action>
         </x-editor-panel>
+        @endisland
+        @island(always: true)
         <x-conversation-panel title="Conversation" date="Today">
             @forelse ($attempts as $attempt)
                 <x-user-bubble :message="$attempt['text']" />
@@ -14,5 +19,6 @@
                 <div class="flex flex-1 items-center justify-center text-center text-[14px] text-[#8a9184]">Your corrections will appear here.</div>
             @endforelse
         </x-conversation-panel>
+        @endisland
     </main>
 </div>

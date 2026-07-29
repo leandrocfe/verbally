@@ -38,13 +38,15 @@ it('validates and trims submissions while preserving newlines', function () {
         ->call('submitText')
         ->assertSet('text', '')
         ->assertSee('I have went')
+        ->assertSet('processing', true)
+        ->call('completeCorrection', 0)
         ->assertSet('processing', false)
         ->assertSee('Session · 1 corrections');
 });
 
 it('rejects empty and oversized submissions', function () {
     Livewire::test('pages::index')->set('text', '   ')->call('submitText')->assertHasErrors('text');
-    Livewire::test('pages::index')->set('text', str_repeat('a', 2000))->call('submitText')->assertSet('processing', false);
+    Livewire::test('pages::index')->set('text', str_repeat('a', 2000))->call('submitText')->assertSet('processing', true);
     Livewire::test('pages::index')->set('text', str_repeat('a', 2001))->call('submitText')->assertHasErrors(['text' => ['max:2000']]);
 });
 
