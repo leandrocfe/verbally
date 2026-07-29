@@ -38,6 +38,7 @@ it('validates and trims submissions while preserving newlines', function () {
         ->call('submitText')
         ->assertSet('text', '')
         ->assertSee('I have went')
+        ->assertSee('Correcting…')
         ->assertSet('processing', true)
         ->call('completeCorrection', 0)
         ->assertSet('processing', false)

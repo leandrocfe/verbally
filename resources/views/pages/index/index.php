@@ -39,7 +39,7 @@ new class extends Component
         ];
         $this->text = '';
 
-        /* Streaming starts from completeCorrection after the pending card is rendered. */
+        $this->js('$wire.completeCorrection('.$attemptId.')');
     }
 
     public function completeCorrection(int $attemptId): void
