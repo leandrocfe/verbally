@@ -6,6 +6,8 @@
 .phpactor.json
 .phpunit.result.cache
 /.codex
+/.ai/mcp/mcp.json
+/.scratch/
 /.cursor/
 /.idea
 /.nova
@@ -13,10 +15,16 @@
 /.vscode
 /.zed
 /auth.json
+/AGENTS.md
+/CLAUDE.md
+/CONTEXT.md
 /node_modules
 /public/build
 /public/fonts-manifest.dev.json
 /public/hot
+/docs/agents/
+/docs/notes.md
+/docs/verbally.zip
 /tests/Browser/Screenshots
 /public/storage
 /storage/*.key
