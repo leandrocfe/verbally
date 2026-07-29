@@ -78,7 +78,8 @@ final class GenerateCorrection
         }
 
         $reconstructed = '';
-        foreach ($details['diff'] as $index => $segment) {
+        $previousType = null;
+        foreach ($details['diff'] as $segment) {
             if (! is_array($segment) || ! in_array($segment['type'] ?? null, ['unchanged', 'removed', 'added'], true)) {
                 return false;
             }
@@ -100,12 +101,13 @@ final class GenerateCorrection
             if ($type === 'added' && (! array_key_exists('replacement', $segment) || ! is_string($segment['replacement']))) {
                 return false;
             }
-            if ($type === 'removed' && isset($details['diff'][$index + 1]) && ($details['diff'][$index + 1]['type'] ?? null) !== 'added') {
+            if ($type === 'removed' && $previousType === 'added') {
                 return false;
             }
             if ($type !== 'removed') {
                 $reconstructed .= $segment['replacement'];
             }
+            $previousType = $type;
         }
 
         foreach ($details['explanations'] ?? [] as $explanation) {

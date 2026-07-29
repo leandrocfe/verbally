@@ -28,6 +28,57 @@ it('streams text and validates unchanged output', function () {
     expect($deltas)->toBe('Hello')->and($result['error'])->toBeNull();
 });
 
+it('accepts pure deletions, pure insertions, and ordered substitutions', function (string $corrected, array $diff): void {
+    fakeCorrection($corrected, [
+        'corrected' => $corrected,
+        'diff' => $diff,
+        'explanations' => [['tag' => 'Grammar', 'text' => 'Correction details.']],
+        'is_off_topic' => false,
+    ]);
+
+    expect(app(GenerateCorrection::class)->stream('Original text', fn () => null)['error'])->toBeNull();
+})->with([
+    'pure deletion' => [
+        'The cat',
+        [
+            ['type' => 'unchanged', 'original' => 'The ', 'replacement' => 'The '],
+            ['type' => 'removed', 'original' => 'the '],
+            ['type' => 'unchanged', 'original' => 'cat', 'replacement' => 'cat'],
+        ],
+    ],
+    'pure insertion' => [
+        'I do go',
+        [
+            ['type' => 'unchanged', 'original' => 'I ', 'replacement' => 'I '],
+            ['type' => 'added', 'replacement' => 'do '],
+            ['type' => 'unchanged', 'original' => 'go', 'replacement' => 'go'],
+        ],
+    ],
+    'substitution' => [
+        'I have',
+        [
+            ['type' => 'unchanged', 'original' => 'I ', 'replacement' => 'I '],
+            ['type' => 'removed', 'original' => 'has'],
+            ['type' => 'added', 'replacement' => 'have'],
+        ],
+    ],
+]);
+
+it('rejects substitutions ordered as added then removed', function () {
+    fakeCorrection('I have', [
+        'corrected' => 'I have',
+        'diff' => [
+            ['type' => 'unchanged', 'original' => 'I ', 'replacement' => 'I '],
+            ['type' => 'added', 'replacement' => 'have'],
+            ['type' => 'removed', 'original' => 'has'],
+        ],
+        'explanations' => [['tag' => 'Grammar', 'text' => 'Correction details.']],
+        'is_off_topic' => false,
+    ]);
+
+    expect(app(GenerateCorrection::class)->stream('I has', fn () => null)['stage'])->toBe('details');
+});
+
 it('rejects invalid structured and diff output', function () {
     fakeCorrection('Hello', ['corrected' => 'Different', 'diff' => [], 'explanations' => [], 'is_off_topic' => false]);
     expect(app(GenerateCorrection::class)->stream('Hello', fn () => null)['stage'])->toBe('details');
