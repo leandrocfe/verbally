@@ -44,3 +44,38 @@ it('reports empty stream and provider failures as recoverable', function (string
     });
     expect(app(GenerateCorrection::class)->stream('Hello', fn () => null)['error'])->toContain('Try again');
 })->with(['timeout', 'rate limit']);
+
+it('reports an empty stream', function () {
+    CorrectionTextAgent::fake(['']);
+    expect(app(GenerateCorrection::class)->stream('Hello', fn () => null)['stage'])->toBe('stream');
+});
+
+it('escapes streamed markup before it reaches the callback', function () {
+    fakeCorrection('<script>alert(1)</script>', ['corrected' => '<script>alert(1)</script>', 'diff' => [['type' => 'unchanged', 'original' => '<script>alert(1)</script>', 'replacement' => '<script>alert(1)</script>']], 'explanations' => [['tag' => 'Looks good', 'text' => 'Correct.']], 'is_off_topic' => false]);
+    $streamed = '';
+    app(GenerateCorrection::class)->stream('Hello', function (string $delta) use (&$streamed): void {
+        $streamed .= htmlspecialchars($delta, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    });
+    expect($streamed)->toContain('&lt;script&gt;');
+});
+
+it('retries only structured details after a streamed correction', function () {
+    $textCalls = 0;
+    $detailCalls = 0;
+    CorrectionTextAgent::fake(function () use (&$textCalls): string {
+        $textCalls++;
+
+        return 'Hello';
+    });
+    CorrectionDetailsAgent::fake(function () use (&$detailCalls): array {
+        $detailCalls++;
+
+        return $detailCalls === 1
+            ? ['corrected' => 'invalid', 'diff' => [], 'explanations' => [], 'is_off_topic' => false]
+            : ['corrected' => 'Hello', 'diff' => [['type' => 'unchanged', 'original' => 'Hello', 'replacement' => 'Hello']], 'explanations' => [['tag' => 'Looks good', 'text' => 'Correct.']], 'is_off_topic' => false];
+    });
+    $action = app(GenerateCorrection::class);
+    $first = $action->stream('Hello', fn () => null);
+    $second = $action->details('Hello', $first['corrected']);
+    expect($first['error'])->not->toBeNull()->and($second['error'])->toBeNull()->and($textCalls)->toBe(1)->and($detailCalls)->toBe(2);
+});
