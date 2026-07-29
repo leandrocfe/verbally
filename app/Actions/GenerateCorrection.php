@@ -4,7 +4,7 @@ namespace App\Actions;
 
 use App\Ai\Agents\CorrectionDetailsAgent;
 use App\Ai\Agents\CorrectionTextAgent;
-use Illuminate\Support\Facades\Config;
+use App\Ai\GeminiRuntime;
 use Laravel\Ai\Streaming\Events\TextDelta;
 use Throwable;
 
@@ -13,8 +13,8 @@ final class GenerateCorrection
     /** @return array{corrected:string, details:array<string,mixed>|null, error:string|null, stage:string|null} */
     public function stream(string $submission, callable $onDelta): array
     {
-        $model = Config::get('ai.verbally.gemini_model');
-        $timeout = (int) Config::get('ai.verbally.timeout_seconds', 30);
+        $model = GeminiRuntime::model();
+        $timeout = GeminiRuntime::timeout();
 
         if (blank($model)) {
             return ['corrected' => '', 'details' => null, 'error' => 'Gemini is not configured. Try again later.', 'stage' => 'stream'];
@@ -38,15 +38,15 @@ final class GenerateCorrection
 
             return ['corrected' => $corrected, 'details' => $detailResult['details'], 'error' => $detailResult['error'], 'stage' => $detailResult['error'] === null ? null : 'details'];
         } catch (Throwable $exception) {
-            return ['corrected' => $corrected, 'details' => null, 'error' => $this->errorMessage($exception), 'stage' => 'stream'];
+            return ['corrected' => $corrected, 'details' => null, 'error' => GeminiRuntime::errorMessage($exception), 'stage' => 'stream'];
         }
     }
 
     /** @return array{details:array<string,mixed>|null,error:string|null} */
     public function details(string $submission, string $corrected): array
     {
-        $model = Config::get('ai.verbally.gemini_model');
-        $timeout = (int) Config::get('ai.verbally.timeout_seconds', 30);
+        $model = GeminiRuntime::model();
+        $timeout = GeminiRuntime::timeout();
         if (blank($model)) {
             return ['details' => null, 'error' => 'Gemini is not configured. Try again later.'];
         }
@@ -61,7 +61,7 @@ final class GenerateCorrection
                 ? ['details' => $details, 'error' => null]
                 : ['details' => null, 'error' => 'Gemini returned invalid correction details. Try again.'];
         } catch (Throwable $exception) {
-            return ['details' => null, 'error' => $this->errorMessage($exception)];
+            return ['details' => null, 'error' => GeminiRuntime::errorMessage($exception)];
         }
     }
 
@@ -117,12 +117,5 @@ final class GenerateCorrection
         }
 
         return is_array($details['diff'] ?? null) && is_array($details['explanations'] ?? null) && $reconstructed === $corrected;
-    }
-
-    private function errorMessage(Throwable $exception): string
-    {
-        $message = strtolower($exception->getMessage());
-
-        return str_contains($message, 'rate') ? 'Gemini rate limit reached. Try again.' : (str_contains($message, 'timeout') ? 'Gemini timed out. Try again.' : 'Gemini could not complete this correction. Try again.');
     }
 }
