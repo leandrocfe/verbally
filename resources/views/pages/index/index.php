@@ -43,7 +43,7 @@ new class extends Component
         ];
         $this->text = '';
 
-        $this->js('$wire.completeCorrection('.$attemptId.')');
+        $this->js('$wire.completeCorrection('.$attemptId.').catch(() => $wire.releaseStaleOperation('.$attemptId.'))');
     }
 
     public function completeCorrection(int $attemptId): void
@@ -128,7 +128,12 @@ new class extends Component
         $this->attempts[$attemptId]['followUpPending'] = true;
         $this->attempts[$attemptId]['followUpError'] = null;
 
-        $this->js('$wire.completeFollowUp('.$attemptId.')');
+        $this->js('$wire.completeFollowUp('.$attemptId.').catch(() => $wire.releaseStaleOperation('.$attemptId.'))');
+
+        /* A follow-up click resolves to the conversation island, so the header and editor islands
+        must ship in the same response or their controls would stay enabled while the session is locked. */
+        $this->renderIsland('header');
+        $this->renderIsland('editor');
     }
 
     public function completeFollowUp(int $attemptId): void
@@ -151,5 +156,27 @@ new class extends Component
             $this->attempts[$attemptId]['followUps'][] = ['label' => $result['label'], 'text' => $result['text']];
             $this->attempts[$attemptId]['followUpKind'] = null;
         }
+    }
+
+    /**
+     * Unlock the session when the follow-up request that should finish an operation never lands.
+     *
+     * Both operations run in two hops, and the browser holds the only copy of the session, so a
+     * request that fails or is cancelled leaves the lock set with nothing left to release it.
+     */
+    public function releaseStaleOperation(int $attemptId): void
+    {
+        $message = 'Verbally lost contact with the server. Try again.';
+
+        if (isset($this->attempts[$attemptId]) && $this->attempts[$attemptId]['followUpPending']) {
+            $this->attempts[$attemptId]['followUpPending'] = false;
+            $this->attempts[$attemptId]['followUpError'] = $message;
+        } elseif (isset($this->attempts[$attemptId]) && $this->attempts[$attemptId]['pending']) {
+            $this->attempts[$attemptId]['pending'] = false;
+            $this->attempts[$attemptId]['error'] = $message;
+            $this->attempts[$attemptId]['error_stage'] = 'stream';
+        }
+
+        $this->processing = false;
     }
 };

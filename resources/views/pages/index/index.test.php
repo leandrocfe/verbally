@@ -44,6 +44,7 @@ it('validates and trims submissions while preserving newlines', function () {
         ->assertSet('text', '')
         ->assertSee('I have went')
         ->assertSee('Correcting…')
+        ->assertJs('$wire.completeCorrection(0).catch(() => $wire.releaseStaleOperation(0))')
         ->assertSet('processing', true)
         ->call('completeCorrection', 0)
         ->assertSet('processing', false)
@@ -74,6 +75,7 @@ it('adds a single natural rewrite without creating another correction', function
     $component = correctedComponent()
         ->call('startFollowUp', 0, 'rewrite')
         ->assertSet('processing', true)
+        ->assertJs('$wire.completeFollowUp(0).catch(() => $wire.releaseStaleOperation(0))')
         ->assertSee('Writing follow-up…')
         ->call('completeFollowUp', 0)
         ->assertSet('processing', false)
@@ -111,8 +113,11 @@ it('locks submissions, card actions, and clearing while a follow-up runs', funct
 });
 
 it('refuses follow-ups on attempts that are not completed corrections', function () {
-    $pending = Livewire::test('pages::index')->set('text', 'A sentence.')->call('submitText')->call('startFollowUp', 0, 'rewrite');
-    expect($pending->get('attempts')[0]['followUpPending'])->toBeFalse();
+    /* Release the session lock so the refusal has to come from the attempt still being pending. */
+    $pending = Livewire::test('pages::index')->set('text', 'A sentence.')->call('submitText')->set('processing', false)->call('startFollowUp', 0, 'rewrite');
+    expect($pending->get('attempts')[0]['pending'])->toBeTrue()
+        ->and($pending->get('attempts')[0]['followUpPending'])->toBeFalse()
+        ->and($pending->get('processing'))->toBeFalse();
 
     config(['ai.verbally.gemini_model' => null]);
     $failed = Livewire::test('pages::index')->set('text', 'A sentence.')->call('submitText')->call('completeCorrection', 0)->call('startFollowUp', 0, 'rewrite');
@@ -167,6 +172,48 @@ it('keeps the correction visible when a follow-up fails and retries only the fol
         ->and($component->get('attempts')[0]['followUps'])->toHaveCount(1)
         ->and($rewriteCalls)->toBe(2)
         ->and($detailCalls)->toBe(1);
+});
+
+it('refreshes the header and editor islands when a follow-up locks the session', function () {
+    $fragments = correctedComponent()->call('startFollowUp', 0, 'rewrite')->effects['islandFragments'] ?? [];
+
+    expect(implode('', $fragments))->toContain('name=header')->toContain('name=editor');
+});
+
+it('unlocks the session and reports a recoverable error when a follow-up never completes', function () {
+    $component = correctedComponent()
+        ->call('startFollowUp', 0, 'rewrite')
+        ->assertSet('processing', true)
+        ->call('releaseStaleOperation', 0)
+        ->assertSet('processing', false)
+        ->assertSee('Try again');
+
+    expect($component->get('attempts')[0]['followUpPending'])->toBeFalse()
+        ->and($component->get('attempts')[0]['followUpError'])->toContain('Try again')
+        ->and($component->get('attempts')[0]['followUps'])->toBe([]);
+
+    $component->call('startFollowUp', 0, 'rewrite')->call('completeFollowUp', 0)->assertSee('A more natural way to say it.');
+    $component->call('clearSession')->assertCount('attempts', 0);
+});
+
+it('unlocks the session and keeps the card retryable when a correction never completes', function () {
+    $component = Livewire::test('pages::index')
+        ->set('text', 'I have went home.')
+        ->call('submitText')
+        ->assertSet('processing', true)
+        ->call('releaseStaleOperation', 0)
+        ->assertSet('processing', false)
+        ->assertSee('Try again');
+
+    expect($component->get('attempts')[0]['pending'])->toBeFalse()
+        ->and($component->get('attempts')[0]['error'])->toContain('Try again')
+        ->and($component->get('attempts')[0]['error_stage'])->toBe('stream');
+
+    $component->call('retryDetails', 0);
+
+    expect($component->get('attempts')[0]['error'])->toBeNull()
+        ->and($component->get('attempts')[0]['corrected'])->toContain('I went home.')
+        ->and($component->get('processing'))->toBeFalse();
 });
 
 it('clears the session after follow-ups', function () {
