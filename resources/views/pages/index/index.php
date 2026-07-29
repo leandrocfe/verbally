@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\GenerateCorrection;
 use Livewire\Component;
 
 new class extends Component
@@ -8,7 +9,7 @@ new class extends Component
 
     public bool $processing = false;
 
-    /** @var array<int, array{id: int, text: string, corrected: string, segments: array<int, array{type: string, original: string, replacement: string}>, explanations: array<int, array{tag: string, text: string}>, followUps: array<int, array{label: string, text: string}>, pending: bool}> */
+    /** @var array<int, array{id: int, text: string, corrected: string, segments: array<int, array{type: string, original?: string, replacement?: string}>, explanations: array<int, array{tag: string, text: string}>, followUps: array<int, array{label: string, text: string}>, pending: bool, error: string|null, off_topic: bool}> */
     public array $attempts = [];
 
     public function submitText(): void
@@ -24,18 +25,32 @@ new class extends Component
 
         $this->processing = true;
         $attemptId = count($this->attempts);
-        $corrected = $this->controlledCorrection($submission);
-
         $this->attempts[] = [
             'id' => $attemptId,
             'text' => $submission,
-            'corrected' => $corrected,
-            'segments' => $this->segments($submission, $corrected),
-            'explanations' => $this->explanations($submission, $corrected),
+            'corrected' => '',
+            'segments' => [],
+            'explanations' => [],
             'followUps' => [],
             'pending' => true,
+            'error' => null,
+            'off_topic' => false,
         ];
         $this->text = '';
+
+        $result = app(GenerateCorrection::class)->stream($submission, function (string $delta) use ($attemptId): void {
+            $this->attempts[$attemptId]['corrected'] .= $delta;
+            $this->stream(htmlspecialchars($this->attempts[$attemptId]['corrected'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), replace: true, to: 'corrected-'.$attemptId);
+        });
+
+        $this->attempts[$attemptId]['pending'] = false;
+        $this->processing = false;
+        $this->attempts[$attemptId]['error'] = $result['error'];
+        if ($result['details'] !== null) {
+            $this->attempts[$attemptId]['segments'] = $result['details']['diff'];
+            $this->attempts[$attemptId]['explanations'] = $result['details']['explanations'];
+            $this->attempts[$attemptId]['off_topic'] = $result['details']['is_off_topic'];
+        }
     }
 
     public function completeCorrection(int $attemptId): void
@@ -46,6 +61,23 @@ new class extends Component
 
         $this->attempts[$attemptId]['pending'] = false;
         $this->processing = false;
+    }
+
+    public function retryDetails(int $attemptId): void
+    {
+        if ($this->processing || ! isset($this->attempts[$attemptId]) || blank($this->attempts[$attemptId]['corrected'])) {
+            return;
+        }
+
+        $this->processing = true;
+        $attempt = $this->attempts[$attemptId];
+        $result = app(GenerateCorrection::class)->details($attempt['text'], $attempt['corrected']);
+        $this->processing = false;
+        $this->attempts[$attemptId]['error'] = $result['error'];
+        if ($result['details'] !== null) {
+            $this->attempts[$attemptId]['segments'] = $result['details']['diff'];
+            $this->attempts[$attemptId]['explanations'] = $result['details']['explanations'];
+        }
     }
 
     public function clearSession(): void
@@ -84,37 +116,5 @@ new class extends Component
             'text' => 'She went home early because the weather was getting worse.',
         ];
         $this->processing = false;
-    }
-
-    private function controlledCorrection(string $submission): string
-    {
-        return str_replace(
-            ['I have went', 'they was', 'me and my friend decides to comes', 'tomorrow'],
-            ['I went', 'it was', 'my friend and I decided to come', 'the next day'],
-            $submission,
-        );
-    }
-
-    /** @return array<int, array{type: string, original: string, replacement: string}> */
-    private function segments(string $original, string $corrected): array
-    {
-        if ($original === $corrected) {
-            return [['type' => 'unchanged', 'original' => $original, 'replacement' => $corrected]];
-        }
-
-        return [
-            ['type' => 'removed', 'original' => $original, 'replacement' => ''],
-            ['type' => 'added', 'original' => '', 'replacement' => $corrected],
-        ];
-    }
-
-    /** @return array<int, array{tag: string, text: string}> */
-    private function explanations(string $original, string $corrected): array
-    {
-        if ($original === $corrected) {
-            return [['tag' => 'Looks good', 'text' => 'This sentence is clear and grammatically correct.']];
-        }
-
-        return [['tag' => 'Grammar', 'text' => 'The controlled correction fixes verb tense and subject–verb agreement while preserving your meaning.']];
     }
 };

@@ -1,9 +1,32 @@
 <?php
 
+use App\Ai\Agents\CorrectionDetailsAgent;
+use App\Ai\Agents\CorrectionTextAgent;
 use Livewire\Livewire;
 use Tests\TestCase;
 
 uses(TestCase::class);
+
+beforeEach(function () {
+    config(['ai.verbally.gemini_model' => 'gemini-test']);
+    CorrectionTextAgent::fake(function (string $prompt): string {
+        return str_replace('I have went', 'I went', $prompt);
+    });
+    CorrectionDetailsAgent::fake(function (string $prompt): array {
+        preg_match('/Original text:\n(.*?)\n\nPreviously streamed corrected text:\n(.*)$/s', $prompt, $matches);
+        $original = $matches[1] ?? '';
+        $corrected = $matches[2] ?? $original;
+
+        return [
+            'corrected' => $corrected,
+            'diff' => $original === $corrected
+                ? [['type' => 'unchanged', 'original' => $original, 'replacement' => $corrected]]
+                : [['type' => 'removed', 'original' => $original], ['type' => 'added', 'replacement' => $corrected]],
+            'explanations' => [['tag' => 'Grammar', 'text' => 'The sentence is clear and correct.']],
+            'is_off_topic' => false,
+        ];
+    });
+});
 
 it('shows the empty session', function () {
     Livewire::test('pages::index')->assertSee('Your corrections will appear here.')->assertSee('Session · 0 corrections');
@@ -15,16 +38,13 @@ it('validates and trims submissions while preserving newlines', function () {
         ->call('submitText')
         ->assertSet('text', '')
         ->assertSee('I have went')
-        ->assertSet('processing', true)
-        ->assertSee('Correcting…')
-        ->call('completeCorrection', 0)
         ->assertSet('processing', false)
         ->assertSee('Session · 1 corrections');
 });
 
 it('rejects empty and oversized submissions', function () {
     Livewire::test('pages::index')->set('text', '   ')->call('submitText')->assertHasErrors('text');
-    Livewire::test('pages::index')->set('text', str_repeat('a', 2000))->call('submitText')->assertSet('processing', true);
+    Livewire::test('pages::index')->set('text', str_repeat('a', 2000))->call('submitText')->assertSet('processing', false);
     Livewire::test('pages::index')->set('text', str_repeat('a', 2001))->call('submitText')->assertHasErrors(['text' => ['max:2000']]);
 });
 

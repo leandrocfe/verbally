@@ -20,6 +20,11 @@ return [
     'default_for_embeddings' => 'openai',
     'default_for_reranking' => 'cohere',
 
+    'verbally' => [
+        'gemini_model' => env('VERBALLY_GEMINI_MODEL'),
+        'timeout_seconds' => env('VERBALLY_AI_TIMEOUT_SECONDS', 30),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Caching
