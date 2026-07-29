@@ -7,7 +7,9 @@
         <x-conversation-panel title="Conversation" date="Today">
             @forelse ($attempts as $attempt)
                 <x-user-bubble :message="$attempt['text']" />
-                <x-correction-card mark="V" label="Corrected" :segments="$attempt['segments']" :explanations="$attempt['explanations']" rewrite-label="Rewrite naturally" examples-label="More examples" :attempt-id="$attempt['id']" :disabled="$processing" :pending="$attempt['pending']" :follow-ups="$attempt['followUps']" />
+                <div wire:key="attempt-{{ $attempt['id'] }}" @if ($attempt['pending']) wire:init="completeCorrection({{ $attempt['id'] }})" @endif>
+                    <x-correction-card mark="V" label="Corrected" :segments="$attempt['segments']" :explanations="$attempt['explanations']" rewrite-label="Rewrite naturally" examples-label="More examples" :attempt-id="$attempt['id']" :disabled="$processing" :pending="$attempt['pending']" :follow-ups="$attempt['followUps']" />
+                </div>
             @empty
                 <div class="flex flex-1 items-center justify-center text-center text-[14px] text-[#8a9184]">Your corrections will appear here.</div>
             @endforelse

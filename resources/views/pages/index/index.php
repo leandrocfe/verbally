@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
 new class extends Component
@@ -18,12 +17,10 @@ new class extends Component
             return;
         }
 
+        $this->text = trim($this->text);
         $this->validate(['text' => ['required', 'string', 'max:2000']]);
 
-        $submission = trim($this->text);
-        if ($submission === '') {
-            throw ValidationException::withMessages(['text' => 'Please enter text to correct.']);
-        }
+        $submission = $this->text;
 
         $this->processing = true;
         $attemptId = count($this->attempts);
@@ -39,6 +36,14 @@ new class extends Component
             'pending' => true,
         ];
         $this->text = '';
+    }
+
+    public function completeCorrection(int $attemptId): void
+    {
+        if (! $this->processing || ! isset($this->attempts[$attemptId])) {
+            return;
+        }
+
         $this->attempts[$attemptId]['pending'] = false;
         $this->processing = false;
     }

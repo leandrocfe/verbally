@@ -6,7 +6,7 @@
         <p class="text-[13.5px] leading-[1.5] text-[#7a8175]">{{ $description }}</p>
     </div>
     <div class="flex min-h-[300px] flex-1 flex-col overflow-hidden rounded-[14px] border border-[#e2e5dd] bg-[#fbfcfa]">
-        <textarea aria-label="{{ $title }}" placeholder="{{ $placeholder }}" @if ($model) wire:model="{{ $model }}" @endif @disabled($disabled) class="min-h-0 flex-1 resize-none border-0 bg-transparent p-[18px] text-[15px] leading-[1.65] text-[#21251f] outline-none placeholder:text-[#a3a99c]">{{ $value }}</textarea>
+        <textarea aria-label="{{ $title }}" placeholder="{{ $placeholder }}" @if ($model) wire:model="{{ $model }}" @endif wire:loading.attr="disabled" @disabled($disabled) class="min-h-0 flex-1 resize-none border-0 bg-transparent p-[18px] text-[15px] leading-[1.65] text-[#21251f] outline-none placeholder:text-[#a3a99c]">{{ $value }}</textarea>
         <div class="flex flex-none justify-end border-t border-[#eceee8] px-[14px] py-3"><span class="text-[11.5px] text-[#a3a99c]">{{ $countLabel }}</span></div>
     </div>
     <div class="mt-4 flex items-center justify-between gap-3">
