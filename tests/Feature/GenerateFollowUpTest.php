@@ -46,6 +46,16 @@ it('reports provider failures as recoverable', function (string $message): void 
     expect($result['text'])->toBeNull()->and($result['error'])->toContain('Try again');
 })->with(['timeout', 'rate limit', 'anything else']);
 
+it('reports a generic follow-up failure without calling it a correction', function () {
+    NaturalRewriteAgent::fake(function (): string {
+        throw new RuntimeException('anything else');
+    });
+
+    $result = app(GenerateFollowUp::class)->rewrite('Hello', 'Hello.');
+
+    expect($result['error'])->toBe('Gemini could not complete this follow-up. Try again.');
+});
+
 it('reports an empty response as recoverable', function (string $response) {
     ExampleAgent::fake([$response]);
 
@@ -54,8 +64,8 @@ it('reports an empty response as recoverable', function (string $response) {
     expect($result)->toBe(['label' => 'Example', 'text' => null, 'error' => 'Gemini returned an empty response. Try again.']);
 })->with(['', '   ']);
 
-it('reports a response over 300 characters as recoverable', function () {
-    NaturalRewriteAgent::fake([str_repeat('a', 301)]);
+it('reports a response over 600 characters as recoverable', function () {
+    NaturalRewriteAgent::fake([str_repeat('a', 601)]);
 
     $result = app(GenerateFollowUp::class)->rewrite('Hello', 'Hello.');
 

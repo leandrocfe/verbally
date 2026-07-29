@@ -17,10 +17,10 @@ final class GeminiRuntime
         return (int) Config::get('ai.verbally.timeout_seconds', 30);
     }
 
-    public static function errorMessage(Throwable $exception): string
+    public static function errorMessage(Throwable $exception, string $failedAction = 'correction'): string
     {
         $message = strtolower($exception->getMessage());
 
-        return str_contains($message, 'rate') ? 'Gemini rate limit reached. Try again.' : (str_contains($message, 'timeout') ? 'Gemini timed out. Try again.' : 'Gemini could not complete this correction. Try again.');
+        return str_contains($message, 'rate') ? 'Gemini rate limit reached. Try again.' : (str_contains($message, 'timeout') ? 'Gemini timed out. Try again.' : "Gemini could not complete this {$failedAction}. Try again.");
     }
 }

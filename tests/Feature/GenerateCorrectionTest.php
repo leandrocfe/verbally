@@ -89,6 +89,35 @@ it('accepts off topic with empty details', function () {
     expect(app(GenerateCorrection::class)->stream('What is physics?', fn () => null)['error'])->toBeNull();
 });
 
+it('rejects the invented same/replacement vocabulary observed from the real Gemini provider', function (): void {
+    fakeCorrection('I went to the store', [
+        'corrected' => 'I went to the store',
+        'diff' => [
+            ['type' => 'same', 'original' => 'I '],
+            ['type' => 'replacement', 'original' => 'have went', 'replacement' => 'went'],
+            ['type' => 'same', 'original' => ' to the store'],
+        ],
+        'explanations' => [['tag' => 'Grammar', 'text' => 'Correction details.']],
+        'is_off_topic' => false,
+    ]);
+
+    expect(app(GenerateCorrection::class)->stream('I have went to the store', fn () => null)['stage'])->toBe('details');
+});
+
+it('rejects off-topic details carrying a diff and explanations observed from the real Gemini provider', function (): void {
+    fakeCorrection('Please provide an English text for correction.', [
+        'corrected' => 'Please provide an English text for correction.',
+        'diff' => [
+            ['type' => 'removed', 'original' => 'Qual e a capital do Brasil e por que voce acha isso?'],
+            ['type' => 'added', 'replacement' => 'Please provide an English text for correction.'],
+        ],
+        'explanations' => [['tag' => 'off-topic', 'text' => 'The submitted text is in Portuguese.']],
+        'is_off_topic' => true,
+    ]);
+
+    expect(app(GenerateCorrection::class)->stream('Qual e a capital do Brasil e por que voce acha isso?', fn () => null)['stage'])->toBe('details');
+});
+
 it('reports empty stream and provider failures as recoverable', function (string $message): void {
     CorrectionTextAgent::fake(function () use ($message): string {
         throw new RuntimeException($message);

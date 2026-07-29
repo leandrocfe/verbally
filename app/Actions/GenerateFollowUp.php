@@ -10,6 +10,13 @@ use Throwable;
 
 final class GenerateFollowUp
 {
+    /**
+     * Sanity ceiling against a runaway/looping provider response — not a product rule.
+     * A natural rewrite or example is expected to be one short sentence; this only
+     * guards against a malformed response, it does not encode a domain length limit.
+     */
+    private const MAX_RESPONSE_LENGTH = 600;
+
     /** @return array{label: string, text: string|null, error: string|null} */
     public function rewrite(string $submission, string $corrected): array
     {
@@ -44,13 +51,13 @@ final class GenerateFollowUp
                 return ['label' => $label, 'text' => null, 'error' => 'Gemini returned an empty response. Try again.'];
             }
 
-            if (mb_strlen($text) > 300) {
+            if (mb_strlen($text) > self::MAX_RESPONSE_LENGTH) {
                 return ['label' => $label, 'text' => null, 'error' => 'Gemini returned a response that was too long. Try again.'];
             }
 
             return ['label' => $label, 'text' => $text, 'error' => null];
         } catch (Throwable $exception) {
-            return ['label' => $label, 'text' => null, 'error' => GeminiRuntime::errorMessage($exception)];
+            return ['label' => $label, 'text' => null, 'error' => GeminiRuntime::errorMessage($exception, 'follow-up')];
         }
     }
 }

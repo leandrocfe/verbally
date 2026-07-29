@@ -22,7 +22,7 @@ final class CorrectionDetailsAgent implements Agent, HasStructuredOutput
         return [
             'corrected' => $schema->string()->required(),
             'diff' => $schema->array()->items($schema->object([
-                'type' => $schema->string()->required(),
+                'type' => $schema->string()->enum(['unchanged', 'removed', 'added'])->required(),
                 'original' => $schema->string(),
                 'replacement' => $schema->string(),
             ]))->required(),
