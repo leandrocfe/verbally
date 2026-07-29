@@ -44,6 +44,7 @@ final class TestingServiceProvider extends ServiceProvider
         }
 
         return match ($submission) {
+            'What is the difference between affect and effect?' => 'Please write an English sentence for correction.',
             'She go home.' => 'She goes home.',
             'I needs a follow-up retry.' => 'I need a follow-up retry.',
             'I needs a details retry.' => 'I need a details retry.',
@@ -75,6 +76,15 @@ final class TestingServiceProvider extends ServiceProvider
                 ],
                 'explanations' => [['tag' => 'Agreement', 'text' => 'Use goes with she.']],
                 'is_off_topic' => false,
+            ];
+        }
+
+        if ($submission === 'What is the difference between affect and effect?') {
+            return [
+                'corrected' => $corrected,
+                'diff' => [],
+                'explanations' => [],
+                'is_off_topic' => true,
             ];
         }
 

@@ -3,6 +3,7 @@
 use App\Actions\GenerateCorrection;
 use App\Ai\Agents\CorrectionDetailsAgent;
 use App\Ai\Agents\CorrectionTextAgent;
+use App\Ai\Prompts\CorrectionPrompt;
 
 beforeEach(function (): void {
     config(['ai.verbally.gemini_model' => 'test-model']);
@@ -87,6 +88,14 @@ it('rejects invalid structured and diff output', function () {
 it('accepts off topic with empty details', function () {
     fakeCorrection('Please write an English sentence for correction.', ['corrected' => 'Please write an English sentence for correction.', 'diff' => [], 'explanations' => [], 'is_off_topic' => true]);
     expect(app(GenerateCorrection::class)->stream('What is physics?', fn () => null)['error'])->toBeNull();
+});
+
+it('instructs the model to reject educational affect and effect questions but correct interrogative text', function (): void {
+    expect(CorrectionPrompt::instructions())
+        ->toContain('What is the difference between affect and effect?')
+        ->toContain('Do not classify a sentence as off-topic merely because it is a question.');
+    expect(CorrectionPrompt::detailsInstructions())
+        ->toContain('an interrogative sentence submitted for correction remains in scope');
 });
 
 it('rejects the invented same/replacement vocabulary observed from the real Gemini provider', function (): void {
