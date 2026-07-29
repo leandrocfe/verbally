@@ -5,16 +5,14 @@
     <main class="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[440px_1fr]">
         @island(name: 'editor', always: true)
             <x-editor-panel title="Write in English" description="Paste or type a sentence. Verbally corrects it and explains every change." placeholder="e.g. Yesterday I go to the park and I have seen many peoples running…" :value="$text" count-label="{{ mb_strlen($text) }} / 2000" shortcut-label="⏎ to send · ⇧⏎ new line" model="text" :disabled="$processing || count($attempts) >= 20">
-                <x-slot:action><x-primary-button label="Correct my text" wire:click="submitText" wire:island="" :disabled="$processing || count($attempts) >= 20" /></x-slot:action>
+                <x-slot:action><x-primary-button label="Correct my text" x-on:click="$wire.submitText()" :disabled="$processing || count($attempts) >= 20" /></x-slot:action>
             </x-editor-panel>
         @endisland
         @island(name: 'conversation', always: true)
             <x-conversation-panel title="Conversation" date="Today">
                 @forelse ($attempts as $attempt)
                     <x-user-bubble :message="$attempt['text']" />
-                    <div wire:key="attempt-{{ $attempt['id'] }}">
-                        <x-correction-card mark="V" label="Corrected" :segments="$attempt['segments']" :explanations="$attempt['explanations']" :corrected="$attempt['corrected']" :error="$attempt['error']" :off-topic="$attempt['off_topic']" rewrite-label="Rewrite naturally" examples-label="More examples" :attempt-id="$attempt['id']" :disabled="$processing" :pending="$attempt['pending']" :follow-ups="$attempt['followUps']" :follow-up-pending="$attempt['followUpPending']" :follow-up-kind="$attempt['followUpKind']" :follow-up-error="$attempt['followUpError']" />
-                    </div>
+                    <livewire:correction-attempt :attempt-id="$attempt['id']" :submission="$attempt['text']" :session-processing="$processing" :wire:key="'attempt-'.$attempt['id']" />
                 @empty
                     <div class="flex flex-1 items-center justify-center text-center text-[14px] text-[#8a9184]">Your corrections will appear here.</div>
                 @endforelse
