@@ -72,6 +72,11 @@ final class GenerateCorrection
             return false;
         }
 
+        if ($details['is_off_topic']) {
+            return is_array($details['diff'] ?? null) && is_array($details['explanations'] ?? null)
+                && $details['diff'] === [] && $details['explanations'] === [];
+        }
+
         $reconstructed = '';
         foreach ($details['diff'] ?? [] as $segment) {
             if (! is_array($segment) || ! in_array($segment['type'] ?? null, ['unchanged', 'removed', 'added'], true)) {
