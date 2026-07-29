@@ -1,6 +1,6 @@
 <div class="flex h-screen min-h-[720px] w-full flex-col overflow-hidden bg-[#f6f7f4]">
     @island(name: 'header', always: true)
-        <x-app-header mark="V" brand="Verbally" tagline="English corrections &amp; coaching" session-label="Session · {{ $this->completedCorrections() }} corrections" clear-label="Clear session" clear-action="clearSession" :disabled="$processing" />
+        <x-app-header mark="V" brand="Verbally" tagline="English corrections & coaching" session-label="Session · {{ $this->completedCorrections() }} corrections" clear-label="Clear session" clear-action="clearSession" :disabled="$processing" />
     @endisland
     <main class="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[440px_1fr]">
         @island(name: 'editor', always: true)
