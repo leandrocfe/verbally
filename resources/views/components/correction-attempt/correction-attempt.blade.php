@@ -19,6 +19,7 @@
                 :follow-up-kind="$followUpKind"
                 :follow-up-error="$followUpError"
                 :retry-action="'$wire.$parent.retryAttempt('.$attemptId.', \''.($errorStage ?? 'stream').'\')'"
+                :follow-up-retry-action="'$wire.$parent.startFollowUp('.$attemptId.', \''.($followUpKind ?? 'rewrite').'\')'"
                 :rewrite-action="'$wire.$parent.startFollowUp('.$attemptId.', \'rewrite\')'"
                 :examples-action="'$wire.$parent.startFollowUp('.$attemptId.', \'example\')'"
             />

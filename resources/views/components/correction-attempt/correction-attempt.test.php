@@ -68,9 +68,16 @@ it('processes a follow-up after the parent grants the global operation lock', fu
         ->assertDispatched('correction-attempt-finished', attemptId: 0);
 });
 
-it('keeps a failed follow-up on the same child and allows the parent to grant another retry', function (): void {
-    NaturalRewriteAgent::fake(function (): string {
-        throw new RuntimeException('timeout');
+it('keeps a failed follow-up on the same child and retries only that follow-up through the parent lock', function (): void {
+    $followUpCalls = 0;
+    NaturalRewriteAgent::fake(function () use (&$followUpCalls): string {
+        $followUpCalls++;
+
+        if ($followUpCalls === 1) {
+            throw new RuntimeException('timeout');
+        }
+
+        return 'A more natural way to say it.';
     });
 
     $component = correctionAttempt()
@@ -82,6 +89,16 @@ it('keeps a failed follow-up on the same child and allows the parent to grant an
 
     expect($component->get('followUps'))->toBe([])
         ->and($component->get('followUpKind'))->toBe('rewrite');
+
+    $component->assertSee('$wire.$parent.startFollowUp(0, &#039;rewrite&#039;)', false)
+        ->dispatch('correction-follow-up.0', kind: 'rewrite')
+        ->call('completeFollowUp')
+        ->assertSee('A more natural way to say it.');
+
+    expect($followUpCalls)->toBe(2)
+        ->and($component->get('corrected'))->toBe('I went home.')
+        ->and($component->get('segments'))->toBe([['type' => 'unchanged', 'original' => 'I went home.', 'replacement' => 'I went home.']])
+        ->and($component->get('followUps'))->toHaveCount(1);
 });
 
 it('retries only the requested correction stage inside the same child boundary', function (): void {
