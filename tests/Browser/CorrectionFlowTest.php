@@ -86,6 +86,9 @@ it('renders a recoverable stream error and retries it', function (): void {
     $page->wait(1)
         ->assertSee('Gemini timed out. Try again.');
 
+    $page->assertSee('Session · 0 corrections')
+        ->assertScript('document.querySelector(\'textarea[aria-label="Write in English"]\').disabled', false);
+
     clickBrowserButton($page, 'Try again');
 
     $page
@@ -93,6 +96,42 @@ it('renders a recoverable stream error and retries it', function (): void {
         ->assertSee('I need a correction retry.')
         ->assertSee('The sentence is clear and correct.')
         ->assertNoJavaScriptErrors();
+});
+
+it('keeps off-topic attempts outside the counter and allows another submission', function (): void {
+    $page = visit('/');
+
+    submitBrowserCorrection($page, 'What is the difference between affect and effect?');
+
+    $page->wait(1)
+        ->assertSee('Off topic')
+        ->assertSee('Session · 0 corrections')
+        ->assertScript('document.querySelector(\'textarea[aria-label="Write in English"]\').disabled', false);
+
+    submitBrowserCorrection($page, 'A sentence for correction.');
+
+    $page->wait(1)
+        ->assertSee('Corrected')
+        ->assertSee('Session · 1 corrections')
+        ->assertNoJavaScriptErrors();
+});
+
+it('blocks a twenty-first submission after twenty completed corrections', function (): void {
+    $page = visit('/');
+
+    foreach (range(1, 20) as $number) {
+        submitBrowserCorrection($page, "Completed sentence {$number}.");
+        $page->wait(1);
+    }
+
+    $page->assertSee('Session · 20 corrections')
+        ->assertScript('document.querySelector(\'textarea[aria-label="Write in English"]\').disabled', true)
+        ->assertScript('document.querySelectorAll(\'article\').length', 20);
+
+    $page->script("document.querySelector('textarea[aria-label=\"Write in English\"]').value = 'The blocked twenty-first sentence.';");
+    clickBrowserButton($page, 'Correct my text');
+    $page->assertScript('document.querySelectorAll(\'article\').length', 20)
+        ->assertSee('Session · 20 corrections');
 });
 
 it('renders a recoverable follow-up error and retries only that follow-up', function (): void {
