@@ -1,6 +1,6 @@
 # Entregar follow-ups e atualizações independentes
 
-Status: ready for review
+Status: resolved
 
 Blocked by: 03 — Entregar correções Gemini com streaming e contrato validado.
 
@@ -24,6 +24,7 @@ Não inicie o ticket seguinte sem confirmação explícita do usuário após a e
 
 - Entregue em `8256823`, `42387dc`, `9cf04a4`, `bb12a47` e `ec76f17`. `./vendor/bin/pest` passou com 44 testes / 119 asserções; Pint, `npm run build` e `git diff --check` limpos.
 - Revisão independente: APROVADO COM RESSALVAS, sem defeito bloqueante. As ressalvas de design (destravamento da sessão e sincronia dos controles durante follow-up) foram corrigidas em `ec76f17`; a de teste fraco também.
+- A arquitetura de attempt independente foi entregue em `50b3296` e o retry específico de follow-up em `450df66`. A revisão final foi APROVADA após `9ad397f` e `e1d481b`: `./vendor/bin/pest tests/Browser/CorrectionFlowTest.php` passou com 8 testes / 42 asserções; `PAO_DISABLE=1 ./vendor/bin/pest --compact` com 35 / 65; Pint, build e `git diff --check` passaram.
 
 ### Boundary por Correction attempt
 
@@ -47,4 +48,4 @@ Os fakes do ticket 03 sempre devolviam `type` válido, então a suíte passava e
 
 ### Verificação no navegador
 
-Safari, com Gemini real, em site Herd temporário apontando para o worktree (o checkout do usuário não foi tocado). Confirmados: estado vazio; cartão criado e frase corrigida chegando token a token; diff inline com tags de explicação; follow-up entrando só no cartão clicado, com os outros intactos; dois follow-ups acumulando na ordem sem mexer no contador; envio, limpeza e textarea desabilitados durante o follow-up; Off-topic response sem diff e sem ações; "Clear session" esvaziando conversa e contador; tela estreita empilhando editor sobre conversa com os islands intactos; e a timeline preservando a leitura a 477px do fim e acompanhando o cartão ativo quando junto ao fim.
+O fluxo foi verificado de forma reproduzível com Pest Browser/Playwright e fixtures de agentes ativas somente no ambiente `testing`: estado vazio; pending e bloqueio global; correção/detalhes concluídos; erro e retry de correção; erro e retry exclusivo de follow-up; follow-up no mesmo cartão; tela estreita; e preservação/seguimento da leitura na timeline. A suíte roda em Chromium pelo plugin oficial; não há alegação de validação manual em Safari nem de chamadas Gemini reais.
