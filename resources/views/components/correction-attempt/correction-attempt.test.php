@@ -120,7 +120,18 @@ it('turns an interrupted child operation into a retryable error and releases the
         ->assertSet('pending', false)
         ->assertSet('errorStage', 'stream')
         ->assertSee('Verbally lost contact with the server. Try again.')
-        ->assertDispatched('correction-attempt-finished', attemptId: 0);
+        ->assertDispatched('correction-attempt-finished', attemptId: 0, correctionCompleted: false);
+});
+
+it('reports recoverable correction errors as incomplete attempts', function (): void {
+    CorrectionTextAgent::fake(function (): string {
+        throw new RuntimeException('timeout');
+    });
+
+    correctionAttempt()
+        ->call('completeCorrection')
+        ->assertSet('errorStage', 'stream')
+        ->assertDispatched('correction-attempt-finished', attemptId: 0, correctionCompleted: false);
 });
 
 it('does not start a follow-up for an off-topic response', function (): void {
@@ -137,5 +148,6 @@ it('does not start a follow-up for an off-topic response', function (): void {
         ->dispatch('correction-follow-up.0', kind: 'example')
         ->assertSet('offTopic', true)
         ->assertSet('followUpPending', false)
-        ->assertSet('followUps', []);
+        ->assertSet('followUps', [])
+        ->assertDispatched('correction-attempt-finished', attemptId: 0, correctionCompleted: false);
 });

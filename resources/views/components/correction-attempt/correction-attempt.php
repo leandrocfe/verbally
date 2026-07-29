@@ -59,14 +59,14 @@ new class extends Component
             $this->setDetails($result['details']);
         }
 
-        $this->finish();
+        $this->finish($this->error === null && ! $this->offTopic);
     }
 
     #[On('correction-follow-up.{attemptId}')]
     public function startFollowUp(string $kind): void
     {
         if (! in_array($kind, ['rewrite', 'example'], true) || $this->pending || $this->error !== null || $this->offTopic || blank($this->corrected)) {
-            $this->finish();
+            $this->finish($this->error === null && ! $this->offTopic);
 
             return;
         }
@@ -96,14 +96,14 @@ new class extends Component
             $this->followUpKind = null;
         }
 
-        $this->finish();
+        $this->finish($this->error === null && ! $this->offTopic);
     }
 
     #[On('correction-retry.{attemptId}')]
     public function retry(string $stage): void
     {
         if (! in_array($stage, ['stream', 'details'], true)) {
-            $this->finish();
+            $this->finish(false);
 
             return;
         }
@@ -121,7 +121,7 @@ new class extends Component
         }
 
         if (blank($this->corrected)) {
-            $this->finish();
+            $this->finish(false);
 
             return;
         }
@@ -134,7 +134,7 @@ new class extends Component
             $this->setDetails($result['details']);
         }
 
-        $this->finish();
+        $this->finish($this->error === null && ! $this->offTopic);
     }
 
     public function reportStaleOperation(): void
@@ -150,7 +150,7 @@ new class extends Component
             $this->errorStage = 'stream';
         }
 
-        $this->finish();
+        $this->finish(false);
     }
 
     /** @param array{diff: array<int, array{type: string, original?: string, replacement?: string}>, explanations: array<int, array{tag: string, text: string}>, is_off_topic: bool} $details */
@@ -161,8 +161,8 @@ new class extends Component
         $this->offTopic = $details['is_off_topic'];
     }
 
-    private function finish(): void
+    private function finish(bool $correctionCompleted = false): void
     {
-        $this->dispatch('correction-attempt-finished', attemptId: $this->attemptId);
+        $this->dispatch('correction-attempt-finished', attemptId: $this->attemptId, correctionCompleted: $correctionCompleted);
     }
 };

@@ -9,12 +9,12 @@ new class extends Component
 
     public bool $processing = false;
 
-    /** @var array<int, array{id: int, text: string}> */
+    /** @var array<int, array{id: int, text: string, completed: bool}> */
     public array $attempts = [];
 
     public function submitText(): void
     {
-        if ($this->processing || count($this->attempts) >= 20) {
+        if ($this->processing || $this->completedCorrections() >= 20) {
             return;
         }
 
@@ -25,6 +25,7 @@ new class extends Component
         $this->attempts[] = [
             'id' => $this->nextAttemptId(),
             'text' => $this->text,
+            'completed' => false,
         ];
         $this->text = '';
     }
@@ -60,11 +61,22 @@ new class extends Component
     }
 
     #[On('correction-attempt-finished')]
-    public function finishAttempt(int $attemptId): void
+    public function finishAttempt(int $attemptId, bool $correctionCompleted = false): void
     {
         if ($this->hasAttempt($attemptId)) {
+            $attemptIndex = array_find_key($this->attempts, fn (array $attempt): bool => $attempt['id'] === $attemptId);
+
+            if ($correctionCompleted && $attemptIndex !== null) {
+                $this->attempts[$attemptIndex]['completed'] = true;
+            }
+
             $this->processing = false;
         }
+    }
+
+    public function completedCorrections(): int
+    {
+        return count(array_filter($this->attempts, fn (array $attempt): bool => $attempt['completed']));
     }
 
     private function hasAttempt(int $attemptId): bool

@@ -1,11 +1,11 @@
 <div class="flex h-screen min-h-[720px] w-full flex-col overflow-hidden bg-[#f6f7f4]">
     @island(name: 'header', always: true)
-        <x-app-header mark="V" brand="Verbally" tagline="English corrections &amp; coaching" session-label="Session · {{ count($attempts) }} corrections" clear-label="Clear session" clear-action="clearSession" :disabled="$processing" />
+        <x-app-header mark="V" brand="Verbally" tagline="English corrections &amp; coaching" session-label="Session · {{ $this->completedCorrections() }} corrections" clear-label="Clear session" clear-action="clearSession" :disabled="$processing" />
     @endisland
     <main class="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[440px_1fr]">
         @island(name: 'editor', always: true)
-            <x-editor-panel title="Write in English" description="Paste or type a sentence. Verbally corrects it and explains every change." placeholder="e.g. Yesterday I go to the park and I have seen many peoples running…" :value="$text" count-label="{{ mb_strlen($text) }} / 2000" shortcut-label="⏎ to send · ⇧⏎ new line" model="text" :disabled="$processing || count($attempts) >= 20">
-                <x-slot:action><x-primary-button label="Correct my text" x-on:click="$wire.submitText()" :disabled="$processing || count($attempts) >= 20" /></x-slot:action>
+            <x-editor-panel title="Write in English" description="Paste or type a sentence. Verbally corrects it and explains every change." placeholder="e.g. Yesterday I go to the park and I have seen many peoples running…" :value="$text" count-label="{{ mb_strlen($text) }} / 2000" shortcut-label="⏎ to send · ⇧⏎ new line" model="text" :disabled="$processing || $this->completedCorrections() >= 20">
+                <x-slot:action><x-primary-button label="Correct my text" x-on:click="$wire.submitText()" :disabled="$processing || $this->completedCorrections() >= 20" /></x-slot:action>
             </x-editor-panel>
         @endisland
         @island(name: 'conversation', always: true)
