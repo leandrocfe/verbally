@@ -28,6 +28,8 @@ it('keeps the global lock while a correction is pending, then streams fixture-ba
     submitBrowserCorrection($page, 'I am waiting for a correction.');
 
     $page->assertSee('Correcting…')
+        ->assertScript("(() => { const avatar = document.querySelector('.verbally-correction-avatar img'); return avatar?.getAttribute('src')?.includes('/images/verbally-logo-icon.png') && avatar?.getAttribute('alt') === 'Verbally'; })()", true)
+        ->assertScript("(() => { const bubble = document.querySelector('.verbally-attempt > .flex.justify-end'); const correction = document.querySelector('.verbally-correction'); return correction.getBoundingClientRect().top - bubble.getBoundingClientRect().bottom >= 20; })()", true)
         ->assertScript('document.querySelector(\'article\').classList.contains(\'motion-safe:animate-pulse\')', true)
         ->assertScript('document.querySelector(\'textarea[aria-label="Write in English"]\').disabled', true)
         ->assertScript('[...document.querySelectorAll(\'button\')].find((button) => button.textContent.includes(\'Clear session\')).disabled', true)
@@ -159,12 +161,17 @@ it('renders a recoverable follow-up error and retries only that follow-up', func
         ->assertNoConsoleLogs();
 });
 
-it('stacks the editor above the conversation on a narrow viewport', function (): void {
-    $page = visit('/')->resize(600, 800);
+it('keeps the responsive layout in one column and aligns the conversation with the clear action', function (): void {
+    $page = visit('/');
 
-    $page->assertScript('getComputedStyle(document.querySelector(\'main\')).gridTemplateColumns', '600px')
-        ->assertScript('document.querySelector(\'main > section\').getBoundingClientRect().top < document.querySelector(\'main > section:nth-child(2)\').getBoundingClientRect().top', true)
-        ->assertNoJavaScriptErrors();
+    foreach ([800, 600, 500] as $width) {
+        $page->resize($width, 800)
+            ->assertScript('getComputedStyle(document.querySelector(\'main\')).gridTemplateColumns.split(\' \').length', 1)
+            ->assertScript('document.querySelector(\'main > section\').getBoundingClientRect().top < document.querySelector(\'main > section:nth-child(2)\').getBoundingClientRect().top', true)
+            ->assertScript("(() => { const clearButton = [...document.querySelectorAll('button')].find((button) => button.textContent.includes('Clear session')); const conversation = document.querySelector('.verbally-conversation'); return Math.abs(clearButton.getBoundingClientRect().right - conversation.getBoundingClientRect().right) <= 1; })()", true);
+    }
+
+    $page->assertNoJavaScriptErrors();
 });
 
 it('keeps a distant reader in place and follows a reader near the conversation bottom', function (): void {
@@ -174,6 +181,8 @@ it('keeps a distant reader in place and follows a reader near the conversation b
         submitBrowserCorrection($page, "Sentence {$number} is correct.");
         $page->wait(1);
     }
+
+    $page->assertScript("(() => { const scroll = document.querySelector('[data-conversation-scroll]'); return document.querySelectorAll('.verbally-attempt').length === 4 && parseFloat(getComputedStyle(scroll).rowGap) >= 38; })()", true);
 
     $page->script("const container = document.querySelector('[data-conversation-scroll]'); container.scrollTop = 0; container.dispatchEvent(new Event('scroll'));");
     submitBrowserCorrection($page, 'Sentence five is correct.');

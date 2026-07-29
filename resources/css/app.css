@@ -4,7 +4,71 @@
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
-    --font-display: 'Newsreader', Georgia, serif;
+    --font-sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
 }
+
+:root {
+    --verbally-green: #2f7a55;
+    --verbally-ink: #17352a;
+    --verbally-muted: #4f6256;
+    --verbally-paper: #ffffff;
+    --verbally-line: #dce8df;
+    --verbally-gutter: clamp(20px, 7vw, 110px);
+    color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+body, body.bg-\[\#f5f8f3\] { margin: 0; background: var(--verbally-paper); color: var(--verbally-ink); font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif; }
+button, textarea { font: inherit; }
+button:focus-visible, textarea:focus-visible, a:focus-visible { outline: 3px solid var(--verbally-green); outline-offset: 3px; }
+
+.verbally-shell { min-height: 100vh; background: var(--verbally-paper); }
+.verbally-nav { align-items: center; display: flex; justify-content: space-between; max-width: 1440px; margin: 0 auto; padding: 17px var(--verbally-gutter); }
+.verbally-brand { align-items: center; color: var(--verbally-ink); display: inline-flex; text-decoration: none; }
+.verbally-logo-wrap { display: block; height: 70px; overflow: hidden; position: relative; width: 276px; }
+.verbally-logo-wrap img { height: auto; left: 0; max-width: none; position: absolute; top: -88px; width: 300px; }
+.verbally-nav-meta { align-items: center; display: flex; gap: 24px; }
+.verbally-session { align-items: center; color: var(--verbally-muted); display: inline-flex; font-size: 12px; gap: 8px; }
+.verbally-status-dot { background: #79ba8f; border-radius: 50%; height: 7px; width: 7px; }
+.verbally-clear { background: transparent; border: 1px solid var(--verbally-line); border-radius: 9px; color: var(--verbally-muted); cursor: pointer; font-size: 12px; padding: 9px 12px; transition: border-color .2s ease, color .2s ease, background .2s ease; }
+.verbally-clear:hover { background: white; border-color: #b5d0bd; color: var(--verbally-ink); }
+.verbally-clear:disabled, .verbally-submit:disabled { cursor: not-allowed; opacity: .5; }
+
+.verbally-main { display: grid; gap: clamp(36px, 7vw, 110px); grid-template-columns: minmax(280px, .78fr) minmax(0, 1.22fr); margin: 0 auto; max-width: 1440px; min-height: calc(100vh - 90px); padding: clamp(38px, 7vw, 92px) var(--verbally-gutter) 70px; }
+.verbally-editor { align-self: start; max-width: 500px; padding-top: clamp(10px, 4vw, 56px); }
+.verbally-eyebrow { color: var(--verbally-green); font-size: 11px; font-weight: 600; letter-spacing: .14em; margin: 0 0 15px; text-transform: uppercase; }
+.verbally-editor h1 { font-size: clamp(40px, 5vw, 69px); font-weight: 500; letter-spacing: -.07em; line-height: .98; margin: 0; }
+.verbally-editor h1 em { color: var(--verbally-green); font-style: normal; }
+.verbally-lede { color: var(--verbally-muted); font-size: 15px; line-height: 1.6; margin: 24px 0 36px; max-width: 390px; }
+.verbally-compose { background: white; border: 1px solid var(--verbally-line); border-radius: 14px; box-shadow: 0 16px 42px rgba(47, 92, 62, .07); padding: 16px 17px 0; }
+.verbally-compose-label { color: var(--verbally-ink); display: block; font-size: 12px; font-weight: 600; margin-bottom: 9px; }
+.verbally-compose textarea { background: transparent; border: 0; color: var(--verbally-ink); display: block; font-size: 16px; line-height: 1.6; min-height: 145px; outline: 0; padding: 0; resize: vertical; width: 100%; }
+.verbally-compose textarea::placeholder { color: var(--verbally-muted); }
+.verbally-compose-footer { align-items: center; border-top: 1px solid #edf3ee; display: flex; justify-content: space-between; padding: 11px 0 13px; }
+.verbally-count, .verbally-hint { color: var(--verbally-muted); font-size: 10px; }
+.verbally-submit { background: var(--verbally-green); border: 0; border-radius: 10px; box-shadow: 0 8px 20px rgba(47, 122, 85, .2); color: white; cursor: pointer; font-size: 14px; font-weight: 600; margin-top: 16px; padding: 13px 17px; transition: transform .2s ease, box-shadow .2s ease; }
+.verbally-submit:hover { box-shadow: 0 11px 24px rgba(47, 122, 85, .26); transform: translateY(-2px); }
+.verbally-form-error { color: #ad3e34; font-size: 12px; margin: 10px 0 0; }
+.verbally-editor-note { align-items: center; color: #8b9c91; display: flex; font-size: 11px; gap: 8px; margin-top: 28px; }
+.verbally-note-icon { color: var(--verbally-green); font-size: 14px; }
+
+.verbally-conversation { align-self: stretch; background: var(--verbally-paper); border: 1px solid var(--verbally-line); border-radius: 20px; display: flex; flex-direction: column; min-height: 560px; overflow: hidden; }
+.verbally-conversation-head { align-items: end; border-bottom: 1px solid var(--verbally-line); display: flex; justify-content: space-between; padding: 25px 30px 20px; }
+.verbally-conversation-head .verbally-eyebrow { margin-bottom: 8px; }
+.verbally-conversation-head h2 { font-size: 25px; font-weight: 500; letter-spacing: -.04em; margin: 0; }
+.verbally-date { color: #94a59a; font-size: 12px; }
+.verbally-conversation-scroll { display: flex; flex: 1; flex-direction: column; gap: clamp(38px, 5vw, 56px); min-height: 300px; overflow-y: auto; padding: 30px; }
+.verbally-attempt { animation: verbally-rise .35s ease both; }
+.verbally-correction { margin-top: 20px; }
+.verbally-user-label { color: #90a196; font-size: 10px; letter-spacing: .1em; margin-bottom: 7px; text-align: right; text-transform: uppercase; }
+.verbally-empty { align-items: center; color: #8fa197; display: flex; flex: 1; flex-direction: column; justify-content: center; min-height: 360px; text-align: center; }
+.verbally-empty-mark { align-items: center; border: 1px solid #cbded0; border-radius: 50%; color: var(--verbally-green); display: flex; font-size: 21px; height: 48px; justify-content: center; margin-bottom: 16px; transform: rotate(-8deg); width: 48px; }
+.verbally-empty p { color: var(--verbally-ink); font-size: 15px; margin: 0 0 6px; }
+.verbally-empty span:last-child { font-size: 12px; }
+
+@keyframes verbally-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+@media (max-width: 850px) { .verbally-main { grid-template-columns: 1fr; padding-left: var(--verbally-gutter); padding-right: var(--verbally-gutter); padding-top: 30px; width: auto; } .verbally-editor { max-width: none; padding: 0 24px; } .verbally-conversation { min-height: 500px; } }
+@media (max-width: 560px) { :root { --verbally-gutter: 20px; } .verbally-nav { padding: 18px var(--verbally-gutter); } .verbally-logo-wrap { height: 53px; width: 206px; } .verbally-logo-wrap img { top: -66px; width: 224px; } .verbally-session { display: none; } .verbally-main { gap: 32px; grid-template-columns: 1fr; padding: 28px var(--verbally-gutter) 48px; width: auto; } .verbally-editor { padding-left: 0; padding-right: 0; } .verbally-editor h1 { font-size: 42px; } .verbally-lede { margin-bottom: 24px; } .verbally-conversation-head, .verbally-conversation-scroll { padding-left: 18px; padding-right: 18px; } .verbally-hint { display: none; } }
